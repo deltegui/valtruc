@@ -3,7 +3,8 @@ package valtruc_test
 import (
 	"strings"
 	"testing"
-	"valtruc"
+
+	"github.com/deltegui/valtruc"
 )
 
 func TestCore(t *testing.T) {
