@@ -23,6 +23,10 @@ var boolValidators map[string]ValidatorConstructor = map[string]ValidatorConstru
 	"required": require,
 }
 
+var structValidators map[string]ValidatorConstructor = map[string]ValidatorConstructor{
+	"required": require,
+}
+
 var validators map[reflect.Kind]map[string]ValidatorConstructor = map[reflect.Kind]map[string]ValidatorConstructor{
 	reflect.String:  stringValidators,
 	reflect.Int:     intValidators,
@@ -36,6 +40,7 @@ var validators map[reflect.Kind]map[string]ValidatorConstructor = map[reflect.Ki
 	reflect.Float32: floatValidators,
 	reflect.Float64: floatValidators,
 	reflect.Bool:    boolValidators,
+	reflect.Struct:  structValidators,
 }
 
 func AddValidator(forKind reflect.Kind, tagName string, constructor ValidatorConstructor) {

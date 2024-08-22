@@ -64,11 +64,32 @@ func TestNestedStructs(t *testing.T) {
 		if !strings.Contains(errs[0].Error(), "integer must be greater than 0") {
 			t.Error("The error returned should warn about the minimum value")
 		}
+
+		verr := errs[0].(valtruc.ValidationError)
+		if verr.GetErrorCode() != valtruc.ErrCodeInt64Min {
+			t.Error("The error returned should have ErrCodeInt64Min")
+		}
+		minValue, _ := verr.GetMetadataInt64("min")
+		if minValue != 0 {
+			t.Error("The required minimum value must be 0")
+		}
 	})
 
 	t.Run("Should chceck substruct tags if substruct is not marked as required", func(t *testing.T) {
 		ok, errs := valtruc.Validate(a{
 			Name: "dd",
+		})
+		if ok {
+			t.Error("Validate should check substructs")
+		}
+		if len(errs) == 0 {
+			t.Error("Validate should return substruct errors")
+		}
+	})
+
+	t.Run("Should complain that a requried substruct is missing", func(t *testing.T) {
+		ok, errs := valtruc.Validate(c{
+			Name: "i dont have a requried substruct",
 		})
 		if ok {
 			t.Error("Validate should check substructs")

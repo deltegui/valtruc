@@ -7,55 +7,90 @@ import (
 	"strings"
 )
 
+type errMeta map[string]any
+
 type ValidationError struct {
-	ctx ValidationContext
-	msg string
+	ctx      ValidationContext
+	msg      string
+	code     ErrCode
+	metadata errMeta
 }
 
-func NewValidationError(ctx ValidationContext, msg string) ValidationError {
-	return ValidationError{ctx, msg}
+func NewValidationError(ctx ValidationContext, msg string, code ErrCode) ValidationError {
+	return NewValidationErrorMeta(ctx, msg, code, errMeta{})
+}
+func NewValidationErrorMeta(ctx ValidationContext, msg string, code ErrCode, metadata errMeta) ValidationError {
+	return ValidationError{
+		ctx,
+		msg,
+		code,
+		metadata,
+	}
 }
 
-func (err ValidationError) GetStructName() string {
-	return err.ctx.StructType.Name()
+func (verr ValidationError) GetStructName() string {
+	return verr.ctx.StructType.Name()
 }
 
-func (err ValidationError) GetFieldName() string {
-	return err.ctx.Field.Name
+func (verr ValidationError) GetFieldName() string {
+	return verr.ctx.Field.Name
 }
 
-func (err ValidationError) GetFieldTypeName() string {
-	return err.ctx.Field.Type.Name()
+func (verr ValidationError) GetFieldTypeName() string {
+	return verr.ctx.Field.Type.Name()
 }
 
-func (err ValidationError) GetFieldValue() string {
-	switch err.ctx.Field.Type.Kind() {
+func (verr ValidationError) GetErrorCode() ErrCode {
+	return verr.code
+}
+
+func (verr ValidationError) GetFieldValue() string {
+	switch verr.ctx.Field.Type.Kind() {
 	case reflect.Int:
 	case reflect.Int16:
 	case reflect.Int32:
 	case reflect.Int64:
-		return strconv.FormatInt(err.ctx.FieldValue.Int(), 10)
+		return strconv.FormatInt(verr.ctx.FieldValue.Int(), 10)
 	case reflect.Uint:
 	case reflect.Uint16:
 	case reflect.Uint32:
 	case reflect.Uint64:
-		return strconv.FormatUint(err.ctx.FieldValue.Uint(), 10)
+		return strconv.FormatUint(verr.ctx.FieldValue.Uint(), 10)
 	case reflect.Bool:
-		return strconv.FormatBool(err.ctx.FieldValue.Bool())
+		return strconv.FormatBool(verr.ctx.FieldValue.Bool())
 	case reflect.String:
 	default:
-		return err.ctx.FieldValue.String()
+		return verr.ctx.FieldValue.String()
 	}
-	return err.ctx.FieldValue.String()
+	return verr.ctx.FieldValue.String()
+}
+
+func (verr ValidationError) GetMetadata(key string) (string, bool) {
+	val, ok := verr.metadata[key]
+	if !ok {
+		return "", false
+	}
+	str, ok := val.(string)
+	return str, ok
+}
+
+func (verr ValidationError) GetMetadataInt64(key string) (int64, bool) {
+	val, ok := verr.metadata[key]
+	if !ok {
+		return 0, false
+	}
+	i, ok := val.(int64)
+	return i, ok
 }
 
 func (err ValidationError) Error() string {
 	return fmt.Sprintf(
-		"Validation error on struct '%s', field '%s' (%s) with value '%s': %s",
+		"Validation error on struct '%s', field '%s' (%s) with value '%s': [%d] %s",
 		err.GetStructName(),
 		err.GetFieldName(),
 		err.GetFieldTypeName(),
 		err.GetFieldValue(),
+		err.code,
 		err.msg)
 }
 
