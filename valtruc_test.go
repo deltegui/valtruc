@@ -1,6 +1,7 @@
 package valtruc_test
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -15,10 +16,7 @@ func TestCore(t *testing.T) {
 			Name string
 		}
 
-		ok, errs := vt.Validate(NoValtructValidations{})
-		if !ok {
-			t.Error("Validate should return that the struct is OK!")
-		}
+		errs := vt.Validate(NoValtructValidations{})
 		if len(errs) > 0 {
 			t.Error("Validate should return no errors")
 		}
@@ -51,15 +49,12 @@ func TestNestedStructs(t *testing.T) {
 	}
 
 	t.Run("Should check substructs", func(t *testing.T) {
-		ok, errs := vt.Validate(a{
+		errs := vt.Validate(a{
 			Name: "aab",
 			Sub: b{
 				Age: -1,
 			},
 		})
-		if ok {
-			t.Error("Validate should check substructs")
-		}
 		if len(errs) == 0 {
 			t.Error("Validate should return at least one error")
 		}
@@ -71,34 +66,28 @@ func TestNestedStructs(t *testing.T) {
 		}
 
 		verr := errs[0].(valtruc.ValidationError)
-		if verr.GetErrorCode() != valtruc.ErrCodeInt64Min {
-			t.Error("The error returned should have ErrCodeInt64Min")
+		if verr.GetIdentifier() != valtruc.MinInt64Identifier {
+			t.Error("The error returned should have MinInt64Identifier")
 		}
-		minValue, _ := verr.GetMetadataInt64("min")
-		if minValue != 0 {
+		minValue := verr.GetParam()
+		if minValue != "0" {
 			t.Error("The required minimum value must be 0")
 		}
 	})
 
 	t.Run("Should chceck substruct tags if substruct is not marked as required", func(t *testing.T) {
-		ok, errs := vt.Validate(a{
+		errs := vt.Validate(a{
 			Name: "dd",
 		})
-		if ok {
-			t.Error("Validate should check substructs")
-		}
 		if len(errs) == 0 {
 			t.Error("Validate should return substruct errors")
 		}
 	})
 
 	t.Run("Should complain that a requried substruct is missing", func(t *testing.T) {
-		ok, errs := vt.Validate(c{
+		errs := vt.Validate(c{
 			Name: "i dont have a requried substruct",
 		})
-		if ok {
-			t.Error("Validate should check substructs")
-		}
 		if len(errs) == 0 {
 			t.Error("Validate should return substruct errors")
 		}
@@ -113,10 +102,7 @@ func TestRequired(t *testing.T) {
 			Name string `valtruc:"required"`
 		}
 
-		ok, errs := vt.Validate(user{})
-		if ok {
-			t.Error("Validate should check that name is not setted")
-		}
+		errs := vt.Validate(user{})
 		if len(errs) == 0 {
 			t.Error("Validate should return at least one error")
 		}
@@ -137,10 +123,7 @@ func TestMinInt(t *testing.T) {
 	}
 
 	t.Run("Struct with value inside limit should pass", func(t *testing.T) {
-		ok, errs := vt.Validate(user{Age: 18})
-		if ok {
-			t.Error("Validate should check that int must have minimum")
-		}
+		errs := vt.Validate(user{Age: 18})
 		if len(errs) == 0 {
 			t.Error("Validate should return at least one error")
 		}
@@ -153,10 +136,7 @@ func TestMinInt(t *testing.T) {
 	})
 
 	t.Run("Empty struct should not pass min", func(t *testing.T) {
-		ok, errs := vt.Validate(user{})
-		if ok {
-			t.Error("Validate permit to use min and pass empty struct")
-		}
+		errs := vt.Validate(user{})
 		if len(errs) == 0 {
 			t.Error("Validate should return at least one error")
 		}
@@ -171,10 +151,7 @@ func TestStringValidators(t *testing.T) {
 	}
 
 	t.Run("Min string to reach minimum", func(t *testing.T) {
-		ok, errs := vt.Validate(user{Name: "d"})
-		if ok {
-			t.Error("Validate should check that int must have minimum")
-		}
+		errs := vt.Validate(user{Name: "d"})
 		if len(errs) == 0 {
 			t.Error("Validate should return at least one error")
 		}
@@ -184,10 +161,7 @@ func TestStringValidators(t *testing.T) {
 	})
 
 	t.Run("Min string correct", func(t *testing.T) {
-		ok, errs := vt.Validate(user{Name: "diego"})
-		if !ok {
-			t.Error("Validate should check that int is valid")
-		}
+		errs := vt.Validate(user{Name: "diego"})
 		if len(errs) != 0 {
 			t.Error("Validate should not return errors when its valid")
 		}
@@ -198,10 +172,7 @@ func TestStringValidators(t *testing.T) {
 	}
 
 	t.Run("String min should fail", func(t *testing.T) {
-		ok, errs := vt.Validate(category{Name: "d"})
-		if ok {
-			t.Error("Validate should check that int must have minimum")
-		}
+		errs := vt.Validate(category{Name: "d"})
 		if len(errs) == 0 {
 			t.Error("Validate should return at least one error (when checking minimum)")
 		}
@@ -211,10 +182,7 @@ func TestStringValidators(t *testing.T) {
 	})
 
 	t.Run("String max should fail", func(t *testing.T) {
-		ok, errs := vt.Validate(category{Name: "delgado"})
-		if ok {
-			t.Error("Validate should check that int must have maximum")
-		}
+		errs := vt.Validate(category{Name: "delgado"})
 		if len(errs) == 0 {
 			t.Error("Validate should return at least one error (when checking maximum)")
 		}
@@ -224,10 +192,7 @@ func TestStringValidators(t *testing.T) {
 	})
 
 	t.Run("String min max is correct", func(t *testing.T) {
-		ok, errs := vt.Validate(category{Name: "diego"})
-		if !ok {
-			t.Error("Validate should check that int is valid")
-		}
+		errs := vt.Validate(category{Name: "diego"})
 		if len(errs) != 0 {
 			t.Error("Validate should not return errors when its valid")
 		}
@@ -238,29 +203,90 @@ func TestStringValidators(t *testing.T) {
 	}
 
 	t.Run("String contains all ok", func(t *testing.T) {
-		ok, errs := vt.Validate(tag{
+		errs := vt.Validate(tag{
 			Name: "aqui viene el gran pepo kawai, una ranita muy simpatica",
 		})
-		if !ok {
-			t.Error("Validate should check that string contains substring")
-		}
 		if len(errs) != 0 {
 			t.Error("Validate should not return errors when its valid")
 		}
 	})
 
 	t.Run("String contains failure", func(t *testing.T) {
-		ok, errs := vt.Validate(tag{
+		errs := vt.Validate(tag{
 			Name: "aqui viene el gran jamoncito, una ranita muy simpatica",
 		})
-		if ok {
-			t.Error("Validate should check that string contains substring (pepo kawai)")
-		}
 		if len(errs) != 1 {
 			t.Error("Validate should return only one error")
 		}
 		if !strings.Contains(errs[0].Error(), "must contain substring") {
 			t.Error("The returned error should warn about the field must contain substring")
+		}
+	})
+}
+
+func TestFormat(t *testing.T) {
+	type tag struct {
+		Name string `valtruc:"contains=pepo kawai, min=2"`
+	}
+
+	vt := valtruc.New()
+
+	t.Run("Format should format user defined string", func(t *testing.T) {
+		errs := vt.Validate(tag{Name: ""})
+		if len(errs) == 1 {
+			t.Error("Validate should return many error")
+		}
+		err := errs[0].(valtruc.ValidationError)
+		formatted := err.Format("El nombre debe contener al menos la cadena: '%'")
+		if formatted != "El nombre debe contener al menos la cadena: 'pepo kawai'" {
+			t.Error("The formatted error should warn about the field must contain substring pepo kawai")
+		}
+	})
+}
+
+func TestCanAddCustomValidators(t *testing.T) {
+	type tag struct {
+		Name string `valtruc:"reverse=iawak, min=2"`
+	}
+
+	vt := valtruc.New()
+
+	const identifier valtruc.ValidatorIdentifier = "reverseStringIdentifier"
+
+	reverse := func(param string) valtruc.Validator {
+		return func(ctx valtruc.ValidationContext) (bool, error) {
+			str := ctx.FieldValue.String()
+			i := 0              // str
+			j := len(param) - 1 // param
+			for i < len(str) && j >= 0 {
+				if param[j] != str[i] {
+					return false, valtruc.NewValidationErrorMeta(
+						ctx,
+						"item is not reverse",
+						identifier,
+						param)
+				}
+				j--
+				i++
+			}
+			return true, nil
+		}
+	}
+
+	vt.AddValidator(reflect.String, "reverse", reverse)
+
+	t.Run("Should check custom validators", func(t *testing.T) {
+		errs := vt.Validate(tag{Name: "kawasaki"})
+		if len(errs) != 1 {
+			t.Error("Validate should return one error")
+		}
+		err := errs[0].(valtruc.ValidationError)
+		if err.GetIdentifier() != identifier {
+			t.Error("The error code must be correct")
+		}
+		formatted := err.Format("El elemento debe ser la cadena revertida de: '%'")
+		if formatted != "El elemento debe ser la cadena revertida de: 'iawak'" {
+			t.Error("The formatted error should tell about the reversed string")
 		}
 	})
 }

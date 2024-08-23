@@ -7,24 +7,30 @@ import (
 	"strings"
 )
 
-type errMeta map[string]any
+type ValidatorIdentifier string
 
 type ValidationError struct {
-	ctx      ValidationContext
-	msg      string
-	code     ErrCode
-	metadata errMeta
+	ctx        ValidationContext
+	msg        string
+	identifier ValidatorIdentifier
+	param      string
 }
 
-func NewValidationError(ctx ValidationContext, msg string, code ErrCode) ValidationError {
-	return NewValidationErrorMeta(ctx, msg, code, errMeta{})
-}
-func NewValidationErrorMeta(ctx ValidationContext, msg string, code ErrCode, metadata errMeta) ValidationError {
+func NewValidationError(ctx ValidationContext, msg string, identifier ValidatorIdentifier) ValidationError {
 	return ValidationError{
-		ctx,
-		msg,
-		code,
-		metadata,
+		ctx:        ctx,
+		msg:        msg,
+		identifier: identifier,
+		param:      "",
+	}
+}
+
+func NewValidationErrorMeta(ctx ValidationContext, msg string, identifier ValidatorIdentifier, param string) ValidationError {
+	return ValidationError{
+		ctx:        ctx,
+		msg:        msg,
+		identifier: identifier,
+		param:      param,
 	}
 }
 
@@ -40,8 +46,8 @@ func (verr ValidationError) GetFieldTypeName() string {
 	return verr.ctx.Field.Type.Name()
 }
 
-func (verr ValidationError) GetErrorCode() ErrCode {
-	return verr.code
+func (verr ValidationError) GetIdentifier() ValidatorIdentifier {
+	return verr.identifier
 }
 
 func (verr ValidationError) GetFieldValue() string {
@@ -65,33 +71,36 @@ func (verr ValidationError) GetFieldValue() string {
 	return verr.ctx.FieldValue.String()
 }
 
-func (verr ValidationError) GetMetadata(key string) (string, bool) {
-	val, ok := verr.metadata[key]
-	if !ok {
-		return "", false
-	}
-	str, ok := val.(string)
-	return str, ok
-}
-
-func (verr ValidationError) GetMetadataInt64(key string) (int64, bool) {
-	val, ok := verr.metadata[key]
-	if !ok {
-		return 0, false
-	}
-	i, ok := val.(int64)
-	return i, ok
+func (verr ValidationError) GetParam() string {
+	return verr.param
 }
 
 func (err ValidationError) Error() string {
 	return fmt.Sprintf(
-		"Validation error on struct '%s', field '%s' (%s) with value '%s': [%d] %s",
+		"Validation error on struct '%s', field '%s' (%s) with value '%s': [%s] %s",
 		err.GetStructName(),
 		err.GetFieldName(),
 		err.GetFieldTypeName(),
 		err.GetFieldValue(),
-		err.code,
+		err.GetIdentifier(),
 		err.msg)
+}
+
+func (err ValidationError) Format(fmt string) string {
+	init := []rune(fmt)
+	final := make([]rune, 0, len(fmt))
+	for i := 0; i < len(init); i++ {
+		c := init[i]
+		if c != '%' {
+			final = append(final, c)
+			continue
+		}
+
+		value := err.GetParam()
+		final = append(final, []rune(value)...)
+	}
+
+	return string(final)
 }
 
 type ValidationContext struct {
@@ -122,11 +131,19 @@ func (cValidation compiledValidation) validate(ctx ValidationContext) (bool, []e
 }
 
 type Valtruc struct {
-	compiled map[reflect.Type]map[string]compiledValidation
+	compiled   map[reflect.Type]map[string]compiledValidation
+	validators map[reflect.Kind]map[string]ValidatorConstructor
 }
 
 func New() Valtruc {
-	return Valtruc{map[reflect.Type]map[string]compiledValidation{}}
+	return Valtruc{
+		compiled:   map[reflect.Type]map[string]compiledValidation{},
+		validators: builtInValidators,
+	}
+}
+
+func (vt *Valtruc) AddValidator(forKind reflect.Kind, tagName string, constructor ValidatorConstructor) {
+	vt.validators[forKind][tagName] = constructor
 }
 
 func (vt Valtruc) addCompilation(t reflect.Type, field string, value compiledValidation) {
@@ -140,7 +157,7 @@ func (vt Valtruc) addCompilation(t reflect.Type, field string, value compiledVal
 	}
 }
 
-func (vt Valtruc) Validate(target interface{}) (bool, []error) {
+func (vt Valtruc) Validate(target interface{}) []error {
 	t := reflect.TypeOf(target)
 	v := reflect.ValueOf(target)
 
@@ -153,8 +170,7 @@ func (vt Valtruc) Validate(target interface{}) (bool, []error) {
 	return vt.runValidations(t, v, cc)
 }
 
-func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]compiledValidation) (bool, []error) {
-	result := true
+func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]compiledValidation) []error {
 	resultErrors := []error{}
 	numFields := t.NumField()
 	for i := 0; i < numFields; i++ {
@@ -172,16 +188,14 @@ func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]
 		validationResult, errors := validator.validate(ctx)
 		if !validationResult {
 			resultErrors = append(resultErrors, errors...)
-			result = false
 		}
 
 		if fieldType.Type.Kind() == reflect.Struct {
-			ok, errors := vt.runValidations(fieldType.Type, fieldValue, vt.compiled[fieldType.Type])
-			result = result && ok
+			errors := vt.runValidations(fieldType.Type, fieldValue, vt.compiled[fieldType.Type])
 			resultErrors = append(resultErrors, errors...)
 		}
 	}
-	return result, resultErrors
+	return resultErrors
 }
 
 type valTag struct {
@@ -211,7 +225,7 @@ func (vt Valtruc) compileStructValidation(t reflect.Type) {
 		}
 
 		tags := parseValtrucTag(val, fieldType, t)
-		cc := compile(tags)
+		cc := vt.compile(tags)
 		vt.addCompilation(t, fieldType.Name, cc)
 	}
 }
@@ -244,11 +258,11 @@ func parseValtrucTag(tag string, field reflect.StructField, structType reflect.T
 	return result
 }
 
-func compile(tags []valTag) compiledValidation {
+func (vt Valtruc) compile(tags []valTag) compiledValidation {
 	result := compiledValidation{}
 
 	for _, tag := range tags {
-		validatorsForKind, ok := validators[tag.field.Type.Kind()]
+		validatorsForKind, ok := vt.validators[tag.field.Type.Kind()]
 		if !ok {
 			panic(fmt.Sprintf("valtruc: there is no validators for kind %s ", tag.field.Type.Kind()))
 		}

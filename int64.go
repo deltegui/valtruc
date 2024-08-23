@@ -5,13 +5,15 @@ import (
 	"strconv"
 )
 
+const (
+	MinInt64Identifier ValidatorIdentifier = "minInt64Identifier"
+	MaxInt64Identifier ValidatorIdentifier = "maxInt64Identifier"
+)
+
 func minInt64(param string) Validator {
 	min, err := strconv.ParseInt(param, 10, 64)
 	if err != nil {
 		panic(fmt.Sprintf("invalid min int64 %s", param))
-	}
-	meta := errMeta{
-		"min": min,
 	}
 	return func(ctx ValidationContext) (bool, error) {
 		value := ctx.FieldValue.Int()
@@ -19,8 +21,8 @@ func minInt64(param string) Validator {
 			return false, NewValidationErrorMeta(
 				ctx,
 				fmt.Sprintf("integer must be greater than %d", min),
-				ErrCodeInt64Min,
-				meta)
+				MinInt64Identifier,
+				param)
 		}
 		return true, nil
 	}
@@ -31,17 +33,14 @@ func maxInt64(param string) Validator {
 	if err != nil {
 		panic(fmt.Sprintf("invalid min int64 %s", param))
 	}
-	meta := errMeta{
-		"max": max,
-	}
 	return func(ctx ValidationContext) (bool, error) {
 		value := ctx.FieldValue.Int()
 		if value >= max {
 			return false, NewValidationErrorMeta(
 				ctx,
 				fmt.Sprintf("integer must be greater than %d", max),
-				ErrCodeInt64Max,
-				meta)
+				MaxInt64Identifier,
+				param)
 		}
 		return true, nil
 	}

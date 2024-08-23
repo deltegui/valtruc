@@ -27,7 +27,7 @@ var structValidators map[string]ValidatorConstructor = map[string]ValidatorConst
 	"required": require,
 }
 
-var validators map[reflect.Kind]map[string]ValidatorConstructor = map[reflect.Kind]map[string]ValidatorConstructor{
+var builtInValidators map[reflect.Kind]map[string]ValidatorConstructor = map[reflect.Kind]map[string]ValidatorConstructor{
 	reflect.String:  stringValidators,
 	reflect.Int:     intValidators,
 	reflect.Int16:   intValidators,
@@ -41,8 +41,4 @@ var validators map[reflect.Kind]map[string]ValidatorConstructor = map[reflect.Ki
 	reflect.Float64: floatValidators,
 	reflect.Bool:    boolValidators,
 	reflect.Struct:  structValidators,
-}
-
-func AddValidator(forKind reflect.Kind, tagName string, constructor ValidatorConstructor) {
-	// TODO IMPLEMENT
 }
