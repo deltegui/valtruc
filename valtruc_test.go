@@ -8,12 +8,14 @@ import (
 )
 
 func TestCore(t *testing.T) {
+	vt := valtruc.New()
+
 	t.Run("Should validate any struct without tags", func(t *testing.T) {
 		type NoValtructValidations struct {
 			Name string
 		}
 
-		ok, errs := valtruc.Validate(NoValtructValidations{})
+		ok, errs := vt.Validate(NoValtructValidations{})
 		if !ok {
 			t.Error("Validate should return that the struct is OK!")
 		}
@@ -26,12 +28,14 @@ func TestCore(t *testing.T) {
 		defer func() {
 			recover()
 		}()
-		valtruc.Validate(1)
+		vt.Validate(1)
 		t.Error("Validate should panic when you pass something that is not a struct")
 	})
 }
 
 func TestNestedStructs(t *testing.T) {
+	vt := valtruc.New()
+
 	type b struct {
 		Age int32 `valtruc:"required, min=0, max=120"`
 	}
@@ -47,7 +51,7 @@ func TestNestedStructs(t *testing.T) {
 	}
 
 	t.Run("Should check substructs", func(t *testing.T) {
-		ok, errs := valtruc.Validate(a{
+		ok, errs := vt.Validate(a{
 			Name: "aab",
 			Sub: b{
 				Age: -1,
@@ -77,7 +81,7 @@ func TestNestedStructs(t *testing.T) {
 	})
 
 	t.Run("Should chceck substruct tags if substruct is not marked as required", func(t *testing.T) {
-		ok, errs := valtruc.Validate(a{
+		ok, errs := vt.Validate(a{
 			Name: "dd",
 		})
 		if ok {
@@ -89,7 +93,7 @@ func TestNestedStructs(t *testing.T) {
 	})
 
 	t.Run("Should complain that a requried substruct is missing", func(t *testing.T) {
-		ok, errs := valtruc.Validate(c{
+		ok, errs := vt.Validate(c{
 			Name: "i dont have a requried substruct",
 		})
 		if ok {
@@ -102,12 +106,14 @@ func TestNestedStructs(t *testing.T) {
 }
 
 func TestRequired(t *testing.T) {
+	vt := valtruc.New()
+
 	t.Run("Empty struct with required fields should be not valid", func(t *testing.T) {
 		type user struct {
 			Name string `valtruc:"required"`
 		}
 
-		ok, errs := valtruc.Validate(user{})
+		ok, errs := vt.Validate(user{})
 		if ok {
 			t.Error("Validate should check that name is not setted")
 		}
@@ -124,12 +130,14 @@ func TestRequired(t *testing.T) {
 }
 
 func TestMinInt(t *testing.T) {
+	vt := valtruc.New()
+
 	type user struct {
 		Age int `valtruc:"min=18"`
 	}
 
 	t.Run("Struct with value inside limit should pass", func(t *testing.T) {
-		ok, errs := valtruc.Validate(user{Age: 18})
+		ok, errs := vt.Validate(user{Age: 18})
 		if ok {
 			t.Error("Validate should check that int must have minimum")
 		}
@@ -145,7 +153,7 @@ func TestMinInt(t *testing.T) {
 	})
 
 	t.Run("Empty struct should not pass min", func(t *testing.T) {
-		ok, errs := valtruc.Validate(user{})
+		ok, errs := vt.Validate(user{})
 		if ok {
 			t.Error("Validate permit to use min and pass empty struct")
 		}
@@ -156,12 +164,14 @@ func TestMinInt(t *testing.T) {
 }
 
 func TestStringValidators(t *testing.T) {
+	vt := valtruc.New()
+
 	type user struct {
 		Name string `valtruc:"min=2"`
 	}
 
 	t.Run("Min string to reach minimum", func(t *testing.T) {
-		ok, errs := valtruc.Validate(user{Name: "d"})
+		ok, errs := vt.Validate(user{Name: "d"})
 		if ok {
 			t.Error("Validate should check that int must have minimum")
 		}
@@ -174,7 +184,7 @@ func TestStringValidators(t *testing.T) {
 	})
 
 	t.Run("Min string correct", func(t *testing.T) {
-		ok, errs := valtruc.Validate(user{Name: "diego"})
+		ok, errs := vt.Validate(user{Name: "diego"})
 		if !ok {
 			t.Error("Validate should check that int is valid")
 		}
@@ -188,7 +198,7 @@ func TestStringValidators(t *testing.T) {
 	}
 
 	t.Run("String min should fail", func(t *testing.T) {
-		ok, errs := valtruc.Validate(category{Name: "d"})
+		ok, errs := vt.Validate(category{Name: "d"})
 		if ok {
 			t.Error("Validate should check that int must have minimum")
 		}
@@ -201,7 +211,7 @@ func TestStringValidators(t *testing.T) {
 	})
 
 	t.Run("String max should fail", func(t *testing.T) {
-		ok, errs := valtruc.Validate(category{Name: "delgado"})
+		ok, errs := vt.Validate(category{Name: "delgado"})
 		if ok {
 			t.Error("Validate should check that int must have maximum")
 		}
@@ -214,7 +224,7 @@ func TestStringValidators(t *testing.T) {
 	})
 
 	t.Run("String min max is correct", func(t *testing.T) {
-		ok, errs := valtruc.Validate(category{Name: "diego"})
+		ok, errs := vt.Validate(category{Name: "diego"})
 		if !ok {
 			t.Error("Validate should check that int is valid")
 		}
@@ -228,7 +238,7 @@ func TestStringValidators(t *testing.T) {
 	}
 
 	t.Run("String contains all ok", func(t *testing.T) {
-		ok, errs := valtruc.Validate(tag{
+		ok, errs := vt.Validate(tag{
 			Name: "aqui viene el gran pepo kawai, una ranita muy simpatica",
 		})
 		if !ok {
@@ -240,7 +250,7 @@ func TestStringValidators(t *testing.T) {
 	})
 
 	t.Run("String contains failure", func(t *testing.T) {
-		ok, errs := valtruc.Validate(tag{
+		ok, errs := vt.Validate(tag{
 			Name: "aqui viene el gran jamoncito, una ranita muy simpatica",
 		})
 		if ok {

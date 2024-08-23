@@ -121,33 +121,39 @@ func (cValidation compiledValidation) validate(ctx ValidationContext) (bool, []e
 	return result, errors
 }
 
-var compiled map[reflect.Type]map[string]compiledValidation = map[reflect.Type]map[string]compiledValidation{}
+type Valtruc struct {
+	compiled map[reflect.Type]map[string]compiledValidation
+}
 
-func addCompilation(t reflect.Type, field string, value compiledValidation) {
-	e, ok := compiled[t]
+func New() Valtruc {
+	return Valtruc{map[reflect.Type]map[string]compiledValidation{}}
+}
+
+func (vt Valtruc) addCompilation(t reflect.Type, field string, value compiledValidation) {
+	e, ok := vt.compiled[t]
 	if ok {
 		e[field] = value
 		return
 	}
-	compiled[t] = map[string]compiledValidation{
+	vt.compiled[t] = map[string]compiledValidation{
 		field: value,
 	}
 }
 
-func Validate(target interface{}) (bool, []error) {
+func (vt Valtruc) Validate(target interface{}) (bool, []error) {
 	t := reflect.TypeOf(target)
 	v := reflect.ValueOf(target)
 
-	cc, ok := compiled[t]
+	cc, ok := vt.compiled[t]
 	if !ok {
-		compileStructValidation(t)
-		cc = compiled[t]
+		vt.compileStructValidation(t)
+		cc = vt.compiled[t]
 	}
 
-	return runValidations(t, v, cc)
+	return vt.runValidations(t, v, cc)
 }
 
-func runValidations(t reflect.Type, v reflect.Value, cc map[string]compiledValidation) (bool, []error) {
+func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]compiledValidation) (bool, []error) {
 	result := true
 	resultErrors := []error{}
 	numFields := t.NumField()
@@ -170,7 +176,7 @@ func runValidations(t reflect.Type, v reflect.Value, cc map[string]compiledValid
 		}
 
 		if fieldType.Type.Kind() == reflect.Struct {
-			ok, errors := runValidations(fieldType.Type, fieldValue, compiled[fieldType.Type])
+			ok, errors := vt.runValidations(fieldType.Type, fieldValue, vt.compiled[fieldType.Type])
 			result = result && ok
 			resultErrors = append(resultErrors, errors...)
 		}
@@ -186,7 +192,7 @@ type valTag struct {
 	parameter  string
 }
 
-func compileStructValidation(t reflect.Type) {
+func (vt Valtruc) compileStructValidation(t reflect.Type) {
 	if t.Kind() != reflect.Struct {
 		panic("valtruc.Validate only accepts structs!")
 	}
@@ -195,7 +201,7 @@ func compileStructValidation(t reflect.Type) {
 		fieldType := t.Field(i)
 
 		if fieldType.Type.Kind() == reflect.Struct {
-			compileStructValidation(fieldType.Type)
+			vt.compileStructValidation(fieldType.Type)
 		}
 
 		tag := fieldType.Tag
@@ -206,7 +212,7 @@ func compileStructValidation(t reflect.Type) {
 
 		tags := parseValtrucTag(val, fieldType, t)
 		cc := compile(tags)
-		addCompilation(t, fieldType.Name, cc)
+		vt.addCompilation(t, fieldType.Name, cc)
 	}
 }
 
