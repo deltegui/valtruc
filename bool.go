@@ -5,7 +5,7 @@ const (
 	MustBeFalseBoolIdentifier ValidatorIdentifier = "mustBeFalseBoolIdentifier"
 )
 
-func mustBeTrue(param string) Validator {
+func mustBeTrue(_ string) Validator {
 	return func(ctx ValidationContext) (bool, error) {
 		value := ctx.FieldValue.Bool()
 		if !value {
@@ -18,7 +18,7 @@ func mustBeTrue(param string) Validator {
 	}
 }
 
-func mustBeFalse(param string) Validator {
+func mustBeFalse(_ string) Validator {
 	return func(ctx ValidationContext) (bool, error) {
 		value := ctx.FieldValue.Bool()
 		if value {

@@ -1,6 +1,7 @@
 package valtruc_test
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -24,7 +25,7 @@ func TestCore(t *testing.T) {
 
 	t.Run("Validate should only accept structs", func(t *testing.T) {
 		defer func() {
-			recover()
+			_ = recover()
 		}()
 		vt.Validate(1)
 		t.Error("Validate should panic when you pass something that is not a struct")
@@ -65,7 +66,11 @@ func TestNestedStructs(t *testing.T) {
 			t.Error("The error returned should warn about the minimum value")
 		}
 
-		verr := errs[0].(valtruc.ValidationError)
+		verr := valtruc.ValidationError{}
+		ok := errors.As(errs[0], &verr)
+		if !ok {
+			t.Error("Expected errs[0] to be valtruc.ValidationError")
+		}
 		if verr.GetIdentifier() != valtruc.MinInt64Identifier {
 			t.Error("The error returned should have MinInt64Identifier")
 		}
@@ -236,8 +241,12 @@ func TestFormat(t *testing.T) {
 		if len(errs) == 1 {
 			t.Error("Validate should return many error")
 		}
-		err := errs[0].(valtruc.ValidationError)
-		formatted := err.Format("El nombre debe contener al menos la cadena: '${}'")
+		verr := valtruc.ValidationError{}
+		ok := errors.As(errs[0], &verr)
+		if !ok {
+			t.Error("Expected errs[0] to be valtruc.ValidationError")
+		}
+		formatted := verr.Format("El nombre debe contener al menos la cadena: '${}'")
 		if formatted != "El nombre debe contener al menos la cadena: 'pepo kawai'" {
 			t.Error("The formatted error should warn about the field must contain substring pepo kawai")
 		}
@@ -277,14 +286,21 @@ func TestCanAddCustomValidators(t *testing.T) {
 
 	t.Run("Should check custom validators", func(t *testing.T) {
 		errs := vt.Validate(tag{Name: "kawasaki"})
+		if errs != nil {
+			t.Error("Validate should return one error")
+		}
 		if len(errs) != 1 {
 			t.Error("Validate should return one error")
 		}
-		err := errs[0].(valtruc.ValidationError)
-		if err.GetIdentifier() != identifier {
+		verr := valtruc.ValidationError{}
+		ok := errors.As(errs[0], &verr)
+		if !ok {
+			t.Error("Expected errs[0] to be valtruc.ValidationError")
+		}
+		if verr.GetIdentifier() != identifier {
 			t.Error("The error code must be correct")
 		}
-		formatted := err.Format("El elemento debe ser la cadena revertida de: '${}'")
+		formatted := verr.Format("El elemento debe ser la cadena revertida de: '${}'")
 		if formatted != "El elemento debe ser la cadena revertida de: 'iawak'" {
 			t.Error("The formatted error should tell about the reversed string")
 		}

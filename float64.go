@@ -11,16 +11,16 @@ const (
 )
 
 func minFloat64(param string) Validator {
-	min, err := strconv.ParseFloat(param, 64)
+	minv, err := strconv.ParseFloat(param, 64)
 	if err != nil {
 		panic(fmt.Sprintf("invalid min float64 %s", param))
 	}
 	return func(ctx ValidationContext) (bool, error) {
 		value := ctx.FieldValue.Float()
-		if value <= min {
+		if value <= minv {
 			return false, NewValidationErrorMeta(
 				ctx,
-				fmt.Sprintf("float must be greater than %f", min),
+				fmt.Sprintf("float must be greater than %f", minv),
 				MinFloat64Identifier,
 				param)
 		}
@@ -29,16 +29,16 @@ func minFloat64(param string) Validator {
 }
 
 func maxFloat64(param string) Validator {
-	max, err := strconv.ParseFloat(param, 64)
+	maxv, err := strconv.ParseFloat(param, 64)
 	if err != nil {
 		panic(fmt.Sprintf("invalid min float64 %s", param))
 	}
 	return func(ctx ValidationContext) (bool, error) {
 		value := ctx.FieldValue.Float()
-		if value >= max {
+		if value >= maxv {
 			return false, NewValidationErrorMeta(
 				ctx,
-				fmt.Sprintf("float must be greater than %f", max),
+				fmt.Sprintf("float must be greater than %f", maxv),
 				MaxFloat64Identifier,
 				param)
 		}

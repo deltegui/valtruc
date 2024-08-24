@@ -2,36 +2,36 @@ package valtruc
 
 import "reflect"
 
-var intValidators map[string]ValidatorConstructor = map[string]ValidatorConstructor{
+var intValidators = map[string]ValidatorConstructor{
 	"required": require,
 	"min":      minInt64,
 	"max":      maxInt64,
 }
 
-var stringValidators map[string]ValidatorConstructor = map[string]ValidatorConstructor{
+var stringValidators = map[string]ValidatorConstructor{
 	"required": require,
 	"min":      minStringLength,
 	"max":      maxStringLength,
 	"contains": containsString,
 }
 
-var floatValidators map[string]ValidatorConstructor = map[string]ValidatorConstructor{
+var floatValidators = map[string]ValidatorConstructor{
 	"required": require,
 	"min":      minFloat64,
 	"max":      maxFloat64,
 }
 
-var boolValidators map[string]ValidatorConstructor = map[string]ValidatorConstructor{
+var boolValidators = map[string]ValidatorConstructor{
 	"required":    require,
 	"mustBeTrue":  mustBeTrue,
 	"mustBeFalse": mustBeFalse,
 }
 
-var structValidators map[string]ValidatorConstructor = map[string]ValidatorConstructor{
+var structValidators = map[string]ValidatorConstructor{
 	"required": require,
 }
 
-var builtInValidators map[reflect.Kind]map[string]ValidatorConstructor = map[reflect.Kind]map[string]ValidatorConstructor{
+var builtInValidators = map[reflect.Kind]map[string]ValidatorConstructor{
 	reflect.String:  stringValidators,
 	reflect.Int:     intValidators,
 	reflect.Int16:   intValidators,

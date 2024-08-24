@@ -16,7 +16,11 @@ type ValidationError struct {
 	param      string
 }
 
-func NewValidationError(ctx ValidationContext, msg string, identifier ValidatorIdentifier) ValidationError {
+func NewValidationError(
+	ctx ValidationContext,
+	msg string,
+	identifier ValidatorIdentifier,
+) ValidationError {
 	return ValidationError{
 		ctx:        ctx,
 		msg:        msg,
@@ -25,7 +29,12 @@ func NewValidationError(ctx ValidationContext, msg string, identifier ValidatorI
 	}
 }
 
-func NewValidationErrorMeta(ctx ValidationContext, msg string, identifier ValidatorIdentifier, param string) ValidationError {
+func NewValidationErrorMeta(
+	ctx ValidationContext,
+	msg string,
+	identifier ValidatorIdentifier,
+	param string,
+) ValidationError {
 	return ValidationError{
 		ctx:        ctx,
 		msg:        msg,
@@ -75,18 +84,18 @@ func (verr ValidationError) GetParam() string {
 	return verr.param
 }
 
-func (err ValidationError) Error() string {
+func (verr ValidationError) Error() string {
 	return fmt.Sprintf(
 		"Validation error on struct '%s', field '%s' (%s) with value '%s': [%s] %s",
-		err.GetStructName(),
-		err.GetFieldName(),
-		err.GetFieldTypeName(),
-		err.GetFieldValue(),
-		err.GetIdentifier(),
-		err.msg)
+		verr.GetStructName(),
+		verr.GetFieldName(),
+		verr.GetFieldTypeName(),
+		verr.GetFieldValue(),
+		verr.GetIdentifier(),
+		verr.msg)
 }
 
-func (err ValidationError) Format(str string) string {
+func (verr ValidationError) Format(str string) string {
 	init := []rune(str)
 	final := make([]rune, 0, len(str))
 
@@ -99,7 +108,7 @@ func (err ValidationError) Format(str string) string {
 
 		remainingLen := len(init) - i
 		if remainingLen >= 2 && str[i:i+3] == "${}" {
-			value := err.GetParam()
+			value := verr.GetParam()
 			final = append(final, []rune(value)...)
 			i += 2
 			continue
@@ -129,9 +138,9 @@ func (cValidation compiledValidation) validate(ctx ValidationContext) (bool, []e
 	result := true
 	errors := []error{}
 	for _, validator := range cValidation.validators {
-		ok, error := validator(ctx)
+		ok, err := validator(ctx)
 		if !ok {
-			errors = append(errors, error)
+			errors = append(errors, err)
 		}
 		result = result && ok
 	}
@@ -181,7 +190,7 @@ func (vt Valtruc) Validate(target interface{}) []error {
 func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]compiledValidation) []error {
 	resultErrors := []error{}
 	numFields := t.NumField()
-	for i := 0; i < numFields; i++ {
+	for i := range numFields {
 		fieldType := t.Field(i)
 		fieldValue := v.Field(i)
 
@@ -199,8 +208,8 @@ func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]
 		}
 
 		if fieldType.Type.Kind() == reflect.Struct {
-			errors := vt.runValidations(fieldType.Type, fieldValue, vt.compiled[fieldType.Type])
-			resultErrors = append(resultErrors, errors...)
+			validationErrors := vt.runValidations(fieldType.Type, fieldValue, vt.compiled[fieldType.Type])
+			resultErrors = append(resultErrors, validationErrors...)
 		}
 	}
 	return resultErrors
@@ -219,7 +228,7 @@ func (vt Valtruc) compileStructValidation(t reflect.Type) {
 		panic("valtruc.Validate only accepts structs!")
 	}
 	numFields := t.NumField()
-	for i := 0; i < numFields; i++ {
+	for i := range numFields {
 		fieldType := t.Field(i)
 
 		if fieldType.Type.Kind() == reflect.Struct {
@@ -241,7 +250,7 @@ func (vt Valtruc) compileStructValidation(t reflect.Type) {
 func parseValtrucTag(tag string, field reflect.StructField, structType reflect.Type) []valTag {
 	tags := strings.Split(tag, ",")
 	result := make([]valTag, len(tags))
-	for i := 0; i < len(tags); i++ {
+	for i := range len(tags) {
 		t := strings.TrimSpace(tags[i])
 
 		var name, param string

@@ -1,14 +1,12 @@
 package valtruc
 
-import (
-	"reflect"
-)
+import "reflect"
 
 const (
 	RequiredIdentifier ValidatorIdentifier = "requiredIdentifier"
 )
 
-func require(param string) Validator {
+func require(_ string) Validator {
 	return func(ctx ValidationContext) (bool, error) {
 		z := reflect.Zero(ctx.FieldValue.Type())
 		isZero := ctx.FieldValue.Interface() == z.Interface()
