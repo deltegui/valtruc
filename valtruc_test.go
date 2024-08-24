@@ -237,7 +237,7 @@ func TestFormat(t *testing.T) {
 			t.Error("Validate should return many error")
 		}
 		err := errs[0].(valtruc.ValidationError)
-		formatted := err.Format("El nombre debe contener al menos la cadena: '%'")
+		formatted := err.Format("El nombre debe contener al menos la cadena: '${}'")
 		if formatted != "El nombre debe contener al menos la cadena: 'pepo kawai'" {
 			t.Error("The formatted error should warn about the field must contain substring pepo kawai")
 		}
@@ -284,9 +284,33 @@ func TestCanAddCustomValidators(t *testing.T) {
 		if err.GetIdentifier() != identifier {
 			t.Error("The error code must be correct")
 		}
-		formatted := err.Format("El elemento debe ser la cadena revertida de: '%'")
+		formatted := err.Format("El elemento debe ser la cadena revertida de: '${}'")
 		if formatted != "El elemento debe ser la cadena revertida de: 'iawak'" {
 			t.Error("The formatted error should tell about the reversed string")
 		}
 	})
+}
+
+func TestCompleteValidation(t *testing.T) {
+	type User struct {
+		Name             string `valtruc:"min=3, max=10, required"`
+		Password         string `valtruc:"min=3, max=255, required"`
+		AcceptConditions bool   `valtruc:"mustBeTrue"`
+		Email            string `valtruc:"min=3, max=255, required"`
+	}
+
+	vt := valtruc.New()
+
+	user := User{
+		Name:             "abcdefghijklmnopqrst",
+		Password:         "b",
+		Email:            "c",
+		AcceptConditions: false,
+	}
+
+	errs := vt.Validate(user)
+
+	if len(errs) == 0 {
+		t.Error("Must be at least one error")
+	}
 }

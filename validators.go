@@ -17,10 +17,14 @@ var stringValidators map[string]ValidatorConstructor = map[string]ValidatorConst
 
 var floatValidators map[string]ValidatorConstructor = map[string]ValidatorConstructor{
 	"required": require,
+	"min":      minFloat64,
+	"max":      maxFloat64,
 }
 
 var boolValidators map[string]ValidatorConstructor = map[string]ValidatorConstructor{
-	"required": require,
+	"required":    require,
+	"mustBeTrue":  mustBeTrue,
+	"mustBeFalse": mustBeFalse,
 }
 
 var structValidators map[string]ValidatorConstructor = map[string]ValidatorConstructor{

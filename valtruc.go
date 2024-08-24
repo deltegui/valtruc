@@ -86,18 +86,26 @@ func (err ValidationError) Error() string {
 		err.msg)
 }
 
-func (err ValidationError) Format(fmt string) string {
-	init := []rune(fmt)
-	final := make([]rune, 0, len(fmt))
+func (err ValidationError) Format(str string) string {
+	init := []rune(str)
+	final := make([]rune, 0, len(str))
+
 	for i := 0; i < len(init); i++ {
 		c := init[i]
-		if c != '%' {
+		if c != '$' {
 			final = append(final, c)
 			continue
 		}
 
-		value := err.GetParam()
-		final = append(final, []rune(value)...)
+		remainingLen := len(init) - i
+		if remainingLen >= 2 && str[i:i+3] == "${}" {
+			value := err.GetParam()
+			final = append(final, []rune(value)...)
+			i += 2
+			continue
+		}
+
+		final = append(final, '$')
 	}
 
 	return string(final)

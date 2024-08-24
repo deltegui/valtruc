@@ -58,7 +58,7 @@ func containsString(param string) Validator {
 			return false, NewValidationErrorMeta(
 				ctx,
 				fmt.Sprintf("the field must contain substring %s", param),
-				"containsStringValidationError",
+				ContainsStringIdentifier,
 				param)
 		}
 		return true, nil
