@@ -159,7 +159,7 @@ type Valtruc struct {
 func New() Valtruc {
 	return Valtruc{
 		compiled:   map[reflect.Type]map[string]compiledValidation{},
-		validators: builtInValidators,
+		validators: createValidators(),
 	}
 }
 
