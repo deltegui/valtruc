@@ -95,7 +95,7 @@ func (verr ValidationError) Error() string {
 		verr.msg)
 }
 
-func (verr ValidationError) Format(str string) string {
+func FormatWithParam(str, param string) string {
 	init := []rune(str)
 	final := make([]rune, 0, len(str))
 
@@ -108,7 +108,7 @@ func (verr ValidationError) Format(str string) string {
 
 		remainingLen := len(init) - i
 		if remainingLen >= 2 && str[i:i+3] == "${}" {
-			value := verr.GetParam()
+			value := param
 			final = append(final, []rune(value)...)
 			i += 2
 			continue
@@ -118,6 +118,10 @@ func (verr ValidationError) Format(str string) string {
 	}
 
 	return string(final)
+}
+
+func (verr ValidationError) Format(str string) string {
+	return FormatWithParam(str, verr.GetParam())
 }
 
 type ValidationContext struct {
