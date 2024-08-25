@@ -246,8 +246,8 @@ func TestFormat(t *testing.T) {
 		if !ok {
 			t.Error("Expected errs[0] to be valtruc.ValidationError")
 		}
-		formatted := verr.Format("El nombre debe contener al menos la cadena: '${}'")
-		if formatted != "El nombre debe contener al menos la cadena: 'pepo kawai'" {
+		formatted := verr.Format("El nombre %s debe contener al menos la cadena: '${}'")
+		if formatted != "El nombre %s debe contener al menos la cadena: 'pepo kawai'" {
 			t.Error("The formatted error should warn about the field must contain substring pepo kawai")
 		}
 	})

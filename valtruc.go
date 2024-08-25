@@ -107,9 +107,8 @@ func FormatWithParam(str, param string) string {
 		}
 
 		remainingLen := len(init) - i
-		if remainingLen >= 2 && str[i:i+3] == "${}" {
-			value := param
-			final = append(final, []rune(value)...)
+		if remainingLen >= 2 && string(init[i:i+3]) == "${}" {
+			final = append(final, []rune(param)...)
 			i += 2
 			continue
 		}
