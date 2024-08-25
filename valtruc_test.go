@@ -18,7 +18,7 @@ func TestCore(t *testing.T) {
 		}
 
 		errs := vt.Validate(NoValtructValidations{})
-		if len(errs) > 0 {
+		if errs != nil {
 			t.Error("Validate should return no errors")
 		}
 	})
@@ -286,7 +286,7 @@ func TestCanAddCustomValidators(t *testing.T) {
 
 	t.Run("Should check custom validators", func(t *testing.T) {
 		errs := vt.Validate(tag{Name: "kawasaki"})
-		if errs != nil {
+		if errs == nil {
 			t.Error("Validate should return one error")
 		}
 		if len(errs) != 1 {

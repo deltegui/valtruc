@@ -188,7 +188,11 @@ func (vt Valtruc) Validate(target interface{}) []error {
 		cc = vt.compiled[t]
 	}
 
-	return vt.runValidations(t, v, cc)
+	errs := vt.runValidations(t, v, cc)
+	if len(errs) == 0 {
+		return nil
+	}
+	return errs
 }
 
 func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]compiledValidation) []error {
