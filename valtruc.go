@@ -249,7 +249,7 @@ func (vt Valtruc) compileStructValidation(t reflect.Type) {
 		}
 
 		tags := parseValtrucTag(val, fieldType, t)
-		cc := vt.compile(tags)
+		cc := vt.compile(tags, fieldType)
 		vt.addCompilation(t, fieldType.Name, cc)
 	}
 }
@@ -282,19 +282,30 @@ func parseValtrucTag(tag string, field reflect.StructField, structType reflect.T
 	return result
 }
 
-func (vt Valtruc) compile(tags []valTag) compiledValidation {
+func (vt Valtruc) compile(tags []valTag, field reflect.StructField) compiledValidation {
 	result := compiledValidation{}
 
+	kind := field.Type.Kind()
+	isPtr := false
+
+	if kind == reflect.Ptr {
+		kind = field.Type.Elem().Kind()
+		isPtr = true
+	}
+
 	for _, tag := range tags {
-		validatorsForKind, ok := vt.validators[tag.field.Type.Kind()]
+		validatorsForKind, ok := vt.validators[kind]
 		if !ok {
-			panic(fmt.Sprintf("valtruc: there is no validators for kind %s ", tag.field.Type.Kind()))
+			panic(fmt.Sprintf("valtruc: there is no validators for kind %s ", kind))
 		}
 		constructor, ok := validatorsForKind[tag.name]
 		if !ok {
-			panic(fmt.Sprintf("valtruc: validator with name %s not found for kind %s", tag.name, tag.field.Type.Kind()))
+			panic(fmt.Sprintf("valtruc: validator with name %s not found for kind %s", tag.name, kind))
 		}
 		validator := constructor(tag.parameter)
+		if isPtr {
+			validator = ptrValidatorWrapper(validator, tag)
+		}
 		result.validators = append(result.validators, validator)
 	}
 

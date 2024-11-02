@@ -330,3 +330,69 @@ func TestCompleteValidation(t *testing.T) {
 		t.Error("Must be at least one error")
 	}
 }
+
+func TestShouldHandlePointers(t *testing.T) {
+	type UserFilter struct {
+		Name             *string `valtruc:"min=3, max=10, required"`
+		Password         *string `valtruc:"min=3, max=255, required"`
+		AcceptConditions *bool   `valtruc:"mustBeTrue"`
+		Email            *string `valtruc:"min=3, max=255, required"`
+	}
+
+	t.Run("Struct with pointers all ok", func(t *testing.T) {
+		vt := valtruc.New()
+
+		var (
+			name             string = "diego"
+			password                = "ddb"
+			email                   = "diego@deltegui.com"
+			acceptConditions bool   = true
+		)
+		user := UserFilter{
+			Name:             &name,
+			Password:         &password,
+			Email:            &email,
+			AcceptConditions: &acceptConditions,
+		}
+
+		errs := vt.Validate(user)
+
+		if len(errs) != 0 {
+			t.Error("Should not be errors")
+		}
+	})
+
+	t.Run("Struct with nil pointers should be ok when is not required", func(t *testing.T) {
+		type UserFilter struct {
+			Name             *string `valtruc:"min=3, max=10"`
+			Password         *string `valtruc:"min=3, max=255"`
+			AcceptConditions *bool   `valtruc:"mustBeTrue"`
+			Email            *string `valtruc:"min=3, max=255"`
+		}
+
+		vt := valtruc.New()
+
+		errs := vt.Validate(UserFilter{})
+
+		if len(errs) != 0 {
+			t.Error("Should not be errors")
+		}
+	})
+
+	t.Run("Struct with nil pointers should fail when is required", func(t *testing.T) {
+		type UserFilter struct {
+			Name             *string `valtruc:"min=3, max=10, required"`
+			Password         *string `valtruc:"min=3, max=255"`
+			AcceptConditions *bool   `valtruc:"mustBeTrue"`
+			Email            *string `valtruc:"min=3, max=255"`
+		}
+
+		vt := valtruc.New()
+
+		errs := vt.Validate(UserFilter{})
+
+		if len(errs) != 1 {
+			t.Error("Should be one error")
+		}
+	})
+}
