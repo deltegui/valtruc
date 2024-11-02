@@ -395,4 +395,24 @@ func TestShouldHandlePointers(t *testing.T) {
 			t.Error("Should be one error")
 		}
 	})
+
+	t.Run("Old validators should still run with pointers", func(t *testing.T) {
+		type UserFilter struct {
+			Name             *string `valtruc:"min=3, max=10"`
+			Password         *string `valtruc:"min=3, max=255"`
+			AcceptConditions *bool   `valtruc:"mustBeTrue"`
+			Email            *string `valtruc:"min=3, max=255"`
+		}
+
+		vt := valtruc.New()
+
+		var (
+			name string = "d"
+		)
+		errs := vt.Validate(UserFilter{Name: &name})
+
+		if len(errs) != 1 {
+			t.Error("Should be one error from string")
+		}
+	})
 }
