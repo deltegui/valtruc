@@ -416,3 +416,24 @@ func TestShouldHandlePointers(t *testing.T) {
 		}
 	})
 }
+
+func TestSliceValidators(t *testing.T) {
+	type UserFilter struct {
+		Roles []int `valtruc:"min=3, max=10, required"`
+	}
+
+	t.Run("Struct with slice ok", func(t *testing.T) {
+		vt := valtruc.New()
+
+		roles := []int{1, 2, 3}
+		user := UserFilter{
+			Roles: roles,
+		}
+
+		errs := vt.Validate(user)
+
+		if len(errs) != 0 {
+			t.Error("Should not be errors")
+		}
+	})
+}
