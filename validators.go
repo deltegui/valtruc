@@ -33,6 +33,12 @@ func createValidators() map[reflect.Kind]map[string]ValidatorConstructor {
 		"required": require,
 	}
 
+	var sliceValidators = map[string]ValidatorConstructor{
+		"required": requiredSlice,
+		"max":      maxSliceLength,
+		"min":      minSliceLength,
+	}
+
 	return map[reflect.Kind]map[string]ValidatorConstructor{
 		reflect.String:  stringValidators,
 		reflect.Int:     intValidators,
@@ -47,5 +53,6 @@ func createValidators() map[reflect.Kind]map[string]ValidatorConstructor {
 		reflect.Float64: floatValidators,
 		reflect.Bool:    boolValidators,
 		reflect.Struct:  structValidators,
+		reflect.Slice:   sliceValidators,
 	}
 }
