@@ -32,6 +32,97 @@ func TestCore(t *testing.T) {
 	})
 }
 
+func TestNestedStructsInsideSlices(t *testing.T) {
+	vt := valtruc.New()
+
+	type b struct {
+		Age int32 `valtruc:"required, min=0, max=120"`
+	}
+
+	type a struct {
+		Name string `valtruc:"min=2, max=255"`
+		BS   []b
+		is   []int32
+	}
+
+	type c struct {
+		Name string `valtruc:"required"`
+		BS   [3]b
+	}
+
+	t.Run("Should check substructs inside slices", func(t *testing.T) {
+		errs := vt.Validate(a{
+			Name: "aab",
+			BS: []b{
+				{
+					Age: -1,
+				},
+			},
+		})
+		if len(errs) == 0 {
+			t.Error("Validate should return at least one error")
+		}
+		if len(errs) > 1 {
+			t.Error("Validate should return only one error")
+		}
+		if !strings.Contains(errs[0].Error(), "integer must be greater than 0") {
+			t.Error("The error returned should warn about the minimum value")
+		}
+
+		verr := valtruc.ValidationError{}
+		ok := errors.As(errs[0], &verr)
+		if !ok {
+			t.Error("Expected errs[0] to be valtruc.ValidationError")
+		}
+		if verr.GetIdentifier() != valtruc.MinInt64Identifier {
+			t.Error("The error returned should have MinInt64Identifier")
+		}
+		minValue := verr.GetParam()
+		if minValue != "0" {
+			t.Error("The required minimum value must be 0")
+		}
+	})
+
+	t.Run("Should check substructs inside arrays", func(t *testing.T) {
+		errs := vt.Validate(c{
+			Name: "aab",
+			BS: [3]b{
+				{
+					Age: -1,
+				},
+				{
+					Age: 5,
+				},
+				{
+					Age: -10,
+				},
+			},
+		})
+		if len(errs) == 0 {
+			t.Error("Validate should return at least one error")
+		}
+		if len(errs) != 2 {
+			t.Error("Validate should return only two errors")
+		}
+		if !strings.Contains(errs[0].Error(), "integer must be greater than 0") {
+			t.Error("The error returned should warn about the minimum value")
+		}
+
+		verr := valtruc.ValidationError{}
+		ok := errors.As(errs[0], &verr)
+		if !ok {
+			t.Error("Expected errs[0] to be valtruc.ValidationError")
+		}
+		if verr.GetIdentifier() != valtruc.MinInt64Identifier {
+			t.Error("The error returned should have MinInt64Identifier")
+		}
+		minValue := verr.GetParam()
+		if minValue != "0" {
+			t.Error("The required minimum value must be 0")
+		}
+	})
+}
+
 func TestNestedStructs(t *testing.T) {
 	vt := valtruc.New()
 

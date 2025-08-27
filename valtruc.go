@@ -218,6 +218,16 @@ func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]
 			validationErrors := vt.runValidations(fieldType.Type, fieldValue, vt.compiled[fieldType.Type])
 			resultErrors = append(resultErrors, validationErrors...)
 		}
+		if fieldType.Type.Kind() == reflect.Array || fieldType.Type.Kind() == reflect.Slice {
+			v := fieldValue
+			for j := 0; j < v.Len(); j++ {
+				indexed := v.Index(j)
+				if indexed.Type().Kind() == reflect.Struct {
+					validationErrors := vt.runValidations(indexed.Type(), indexed, vt.compiled[indexed.Type()])
+					resultErrors = append(resultErrors, validationErrors...)
+				}
+			}
+		}
 	}
 	return resultErrors
 }
@@ -240,6 +250,12 @@ func (vt Valtruc) compileStructValidation(t reflect.Type) {
 
 		if fieldType.Type.Kind() == reflect.Struct {
 			vt.compileStructValidation(fieldType.Type)
+		}
+		if fieldType.Type.Kind() == reflect.Array || fieldType.Type.Kind() == reflect.Slice {
+			underlayingType := fieldType.Type.Elem()
+			if underlayingType.Kind() == reflect.Struct {
+				vt.compileStructValidation(underlayingType)
+			}
 		}
 
 		tag := fieldType.Tag
