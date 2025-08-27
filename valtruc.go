@@ -128,6 +128,7 @@ type ValidationContext struct {
 	Field      reflect.StructField
 	FieldIndex int
 	FieldValue reflect.Value
+	Path       []string
 }
 
 type Validator func(ctx ValidationContext) (bool, error)
@@ -187,14 +188,14 @@ func (vt Valtruc) Validate(target interface{}) []error {
 		cc = vt.compiled[t]
 	}
 
-	errs := vt.runValidations(t, v, cc)
+	errs := vt.runValidations(t, v, cc, []string{})
 	if len(errs) == 0 {
 		return nil
 	}
 	return errs
 }
 
-func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]compiledValidation) []error {
+func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]compiledValidation, path []string) []error {
 	resultErrors := []error{}
 	numFields := t.NumField()
 	for i := range numFields {
@@ -206,6 +207,7 @@ func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]
 			Field:      fieldType,
 			FieldValue: fieldValue,
 			FieldIndex: i,
+			Path:       path,
 		}
 
 		validator := cc[fieldType.Name]
@@ -215,7 +217,8 @@ func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]
 		}
 
 		if fieldType.Type.Kind() == reflect.Struct {
-			validationErrors := vt.runValidations(fieldType.Type, fieldValue, vt.compiled[fieldType.Type])
+			subpath := append(path, fieldType.Name)
+			validationErrors := vt.runValidations(fieldType.Type, fieldValue, vt.compiled[fieldType.Type], subpath)
 			resultErrors = append(resultErrors, validationErrors...)
 		}
 		if fieldType.Type.Kind() == reflect.Array || fieldType.Type.Kind() == reflect.Slice {
@@ -223,7 +226,8 @@ func (vt Valtruc) runValidations(t reflect.Type, v reflect.Value, cc map[string]
 			for j := 0; j < v.Len(); j++ {
 				indexed := v.Index(j)
 				if indexed.Type().Kind() == reflect.Struct {
-					validationErrors := vt.runValidations(indexed.Type(), indexed, vt.compiled[indexed.Type()])
+					subpath := append(path, fmt.Sprintf("%s[%d]", fieldType.Name, j))
+					validationErrors := vt.runValidations(indexed.Type(), indexed, vt.compiled[indexed.Type()], subpath)
 					resultErrors = append(resultErrors, validationErrors...)
 				}
 			}
