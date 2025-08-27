@@ -16,6 +16,10 @@ type ValidationError struct {
 	param      string
 }
 
+func (err ValidationError) Path() []string {
+	return err.ctx.Path
+}
+
 func NewValidationError(
 	ctx ValidationContext,
 	msg string,
