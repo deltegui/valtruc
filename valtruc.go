@@ -252,9 +252,9 @@ func (vt Valtruc) compileStructValidation(t reflect.Type) {
 			vt.compileStructValidation(fieldType.Type)
 		}
 		if fieldType.Type.Kind() == reflect.Array || fieldType.Type.Kind() == reflect.Slice {
-			underlayingType := fieldType.Type.Elem()
-			if underlayingType.Kind() == reflect.Struct {
-				vt.compileStructValidation(underlayingType)
+			underlyingType := fieldType.Type.Elem()
+			if underlyingType.Kind() == reflect.Struct {
+				vt.compileStructValidation(underlyingType)
 			}
 		}
 
