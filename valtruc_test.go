@@ -42,7 +42,6 @@ func TestNestedStructsInsideSlices(t *testing.T) {
 	type a struct {
 		Name string `valtruc:"min=2, max=255"`
 		BS   []b
-		is   []int32
 	}
 
 	type c struct {
