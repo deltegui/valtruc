@@ -17,7 +17,7 @@ func minFloat64(param string) Validator {
 	}
 	return func(ctx ValidationContext) (bool, error) {
 		value := ctx.FieldValue.Float()
-		if value <= minv {
+		if value < minv {
 			return false, NewValidationErrorMeta(
 				ctx,
 				fmt.Sprintf("float must be greater than %f", minv),
@@ -35,7 +35,7 @@ func maxFloat64(param string) Validator {
 	}
 	return func(ctx ValidationContext) (bool, error) {
 		value := ctx.FieldValue.Float()
-		if value >= maxv {
+		if value > maxv {
 			return false, NewValidationErrorMeta(
 				ctx,
 				fmt.Sprintf("float must be greater than %f", maxv),

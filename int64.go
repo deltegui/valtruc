@@ -17,7 +17,7 @@ func minInt64(param string) Validator {
 	}
 	return func(ctx ValidationContext) (bool, error) {
 		value := ctx.FieldValue.Int()
-		if value <= minv {
+		if value < minv {
 			return false, NewValidationErrorMeta(
 				ctx,
 				fmt.Sprintf("integer must be greater than %d", minv),
@@ -35,7 +35,7 @@ func maxInt64(param string) Validator {
 	}
 	return func(ctx ValidationContext) (bool, error) {
 		value := ctx.FieldValue.Int()
-		if value >= maxv {
+		if value > maxv {
 			return false, NewValidationErrorMeta(
 				ctx,
 				fmt.Sprintf("integer must be greater than %d", maxv),
