@@ -219,14 +219,8 @@ func TestMinInt(t *testing.T) {
 
 	t.Run("Struct with value inside limit should pass", func(t *testing.T) {
 		errs := vt.Validate(user{Age: 18})
-		if len(errs) == 0 {
-			t.Error("Validate should return at least one error")
-		}
-		if len(errs) > 1 {
-			t.Error("Validate should return only one error")
-		}
-		if !strings.Contains(errs[0].Error(), "greater than 18") {
-			t.Error("The error returned should warn about error")
+		if len(errs) > 0 {
+			t.Error("Validate should return no errors")
 		}
 	})
 
